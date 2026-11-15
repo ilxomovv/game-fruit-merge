@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Fruit Merge Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap");
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        font-family: "Fredoka", sans-serif;
+        background: radial-gradient(circle at top, #fff1eb 0%, #ace0f9 100%);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      /* Yuqori panel */
+      .header {
+        width: 100%;
+        max-width: 420px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        z-index: 10;
+      }
+
+      .stat-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        padding: 6px 14px;
+        border-radius: 18px;
+        box-shadow:
+          0 6px 15px rgba(0, 0, 0, 0.06),
+          inset 0 2px 0 rgba(255, 255, 255, 0.9);
+        border: 1.5px solid rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 78px;
+      }
+
+      .stat-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: #7f8fa6;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #ff4757;
+        line-height: 1.1;
+      }
+
+      .next-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        padding: 6px 12px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+        border: 1.5px solid rgba(255, 255, 255, 0.9);
+      }
+
+      .next-preview {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        background: linear-gradient(145deg, #ffffff, #f1f2f6);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .settings-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1.5px solid #fff;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+
+      .settings-btn:active {
+        transform: scale(0.9) rotate(30deg);
+      }
+
+      /* O'yin maydoni (Shisha idish) */
+      #game-container {
+        position: relative;
+        width: 92vw;
+        max-width: 380px;
+        height: 73vh;
+        max-height: 590px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.25) 0%,
+          rgba(255, 255, 255, 0.55) 100%
+        );
+        backdrop-filter: blur(14px);
+        border: 4px solid rgba(255, 255, 255, 0.95);
+        border-top: none;
+        border-radius: 0 0 34px 34px;
+        box-shadow:
+          0 20px 45px rgba(31, 38, 135, 0.12),
+          inset 0 -10px 25px rgba(255, 255, 255, 0.7),
+          inset 8px 0 15px rgba(255, 255, 255, 0.4),
+          inset -8px 0 15px rgba(255, 255, 255, 0.4);
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+
+      .danger-line {
+        position: absolute;
+        top: 95px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        border-top: 2px dashed rgba(255, 71, 87, 0.45);
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      /* Pastki evolyutsiya paneli */
+      .evolution-bar {
+        width: 92vw;
+        max-width: 380px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(8px);
+        padding: 6px 10px;
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 13px;
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+      }
+
+      /* Modallar (Sozlamalar va Game Over) */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 20px;
+      }
+
+      .modal-card {
+        background: rgba(255, 255, 255, 0.95);
+        width: 100%;
+        max-width: 320px;
+        border-radius: 28px;
+        padding: 24px;
+        text-align: center;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        border: 2px solid #fff;
+        animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      @keyframes popIn {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .modal-title {
+        font-size: 26px;
+        color: #2f3542;
+        margin-bottom: 20px;
+      }
+
+      .setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f1f2f6;
+        padding: 12px 16px;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        font-size: 17px;
+        font-weight: 600;
+        color: #2f3542;
+      }
+
+      /* Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 28px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #ced6e0;
+        transition: 0.3s;
+        border-radius: 34px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      input:checked + .slider {
+        background: linear-gradient(45deg, #2ed573, #7bed9f);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(24px);
+      }
+
+      .btn-primary {
+        width: 100%;
+        background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+        color: white;
+        border: none;
+        padding: 14px;
+        font-size: 18px;
+        font-family: "Fredoka", sans-serif;
+        font-weight: 700;
+        border-radius: 18px;
+        cursor: pointer;
+        margin-top: 8px;
+        box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
+      }
+
+      .btn-secondary {
+        width: 100%;
+        background: #dfe4ea;
+        color: #2f3542;
+        border: none;
+        padding: 12px;
+        font-size: 16px;
+        font-family: "Fredoka", sans-serif;
+        font-weight: 600;
+        border-radius: 18px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="stat-card">
+        <span class="stat-label">Ochko</span>
+        <span class="stat-value" id="score">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Rekord</span>
+        <span class="stat-value" id="best-score" style="color: #ffa502">0</span>
+      </div>
+      <div class="next-card">
+        <span class="stat-label">Keyingi</span>
+        <div class="next-preview" id="next-fruit">🍒</div>
+      </div>
+      <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+
+    <div id="game-container">
+      <div class="danger-line"></div>
+    </div>
+
+    <div class="evolution-bar">
+      <span>🍒</span
+      >➔<span>🍓</span>➔<span>🍇</span>➔<span>🍊</span>➔<span>🍎</span>➔<span>🍐</span>➔<span>🍑</span>➔<span>🍍</span>➔<span>🍈</span>➔<span
+        >🍉</span
+      >
+    </div>
+
+    <!-- Sozlamalar oynasi -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal-card">
+        <h2 class="modal-title">⚙️ Sozlamalar</h2>
+
+        <div class="setting-row">
+          <span>🎵 Fon musiqasi</span>
+          <label class="switch">
+            <input
+              type="checkbox"
+              id="music-toggle"
+              checked
+              onchange="toggleMusic()"
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <span>🔊 Ovoz effektlari</span>
+          <label class="switch">
+            <input
+              type="checkbox"
+              id="sfx-toggle"
+              checked
+              onchange="toggleSfx()"
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <button
+          class="btn-primary"
+          onclick="
+            restartGame();
+            closeSettings();
+          "
+        >
+          🔄 Qayta boshlash
+        </button>
+        <button class="btn-secondary" onclick="closeSettings()">
+          Davom etish
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over oynasi -->
+    <div class="modal-overlay" id="gameover-modal">
+      <div class="modal-card">
+        <h2 class="modal-title" style="color: #ff4757">O'yin Tugadi!</h2>
+        <p style="font-size: 18px; color: #57606f; margin-bottom: 20px">
+          Sizning ochkoingiz:<br />
+          <strong style="font-size: 34px; color: #2f3542" id="final-score"
+            >0</strong
+          >
+        </p>
+        <button class="btn-primary" onclick="restartGame()">
+          Yana o'ynash
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const { Engine, Render, Runner, World, Bodies, Events } = Matter;
+
+      // 3D Gradient va realistik ranglar palitrasi
+      const FRUITS = [
+        {
+          name: "cherry",
+          radius: 17,
+          c1: "#ff6b81",
+          c2: "#b31217",
+          emoji: "🍒",
+          score: 2,
+        },
+        {
+          name: "strawberry",
+          radius: 23,
+          c1: "#ff7675",
+          c2: "#d63031",
+          emoji: "🍓",
+          score: 4,
+        },
+        {
+          name: "grape",
+          radius: 29,
+          c1: "#a29bfe",
+          c2: "#5f27cd",
+          emoji: "🍇",
+          score: 8,
+        },
+        {
+          name: "orange",
+          radius: 36,
+          c1: "#ffbe76",
+          c2: "#e67e22",
+          emoji: "🍊",
+          score: 16,
+        },
+        {
+          name: "apple",
+          radius: 44,
+          c1: "#ff5252",
+          c2: "#b33939",
+          emoji: "🍎",
+          score: 32,
+        },
+        {
+          name: "pear",
+          radius: 52,
+          c1: "#badc58",
+          c2: "#6ab04c",
+          emoji: "🍐",
+          score: 64,
+        },
+        {
+          name: "peach",
+          radius: 60,
+          c1: "#ffcccc",
+          c2: "#ff793f",
+          emoji: "🍑",
+          score: 128,
+        },
+        {
+          name: "pineapple",
+          radius: 69,
+          c1: "#ffeaa7",
+          c2: "#f39c12",
+          emoji: "🍍",
+          score: 256,
+        },
+        {
+          name: "melon",
+          radius: 79,
+          c1: "#b8e994",
+          c2: "#38ada9",
+          emoji: "🍈",
+          score: 512,
+        },
+        {
+          name: "watermelon",
+          radius: 92,
+          c1: "#55efc4",
+          c2: "#009432",
+          emoji: "🍉",
+          score: 1024,
+        },
+      ];
+
+      const container = document.getElementById("game-container");
+      let width = container.clientWidth;
+      let height = container.clientHeight;
+
+      let score = 0;
+      let bestScore = localStorage.getItem("fruitMergeBest") || 0;
+      document.getElementById("best-score").innerText = bestScore;
+
+      let currentFruitIndex = 0;
+      let nextFruitIndex = Math.floor(Math.random() * 4);
+      let currentX = width / 2;
+      let canDrop = true;
+      let isGameOver = false;
+
+      // Sozlamalar holati
+      let musicEnabled = localStorage.getItem("fm_music") !== "false";
+      let sfxEnabled = localStorage.getItem("fm_sfx") !== "false";
+      document.getElementById("music-toggle").checked = musicEnabled;
+      document.getElementById("sfx-toggle").checked = sfxEnabled;
+
+      // Zarrachalar (Particles) va uchuvchi ochkolar massivi
+      let particles = [];
+      let floatingTexts = [];
+
+      // Audio Tizimi (Fon musiqasi + Ovoz effektlari)
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      let bgmInterval = null;
+      const melodyNotes = [
+        261.63, 329.63, 392.0, 523.25, 392.0, 329.63, 293.66, 349.23, 440.0,
+        349.23,
+      ];
+      let noteIndex = 0;
+
+      function startBackgroundMusic() {
+        if (bgmInterval) clearInterval(bgmInterval);
+        bgmInterval = setInterval(() => {
+          if (!musicEnabled || isGameOver || audioCtx.state !== "running")
+            return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(
+            melodyNotes[noteIndex % melodyNotes.length],
+            audioCtx.currentTime,
+          );
+
+          gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioCtx.currentTime + 0.45,
+          );
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.45);
+          noteIndex++;
+        }, 500);
+      }
+
+      function playPopSound(freq = 300) {
+        if (!sfxEnabled) return;
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(
+          freq * 1.9,
+          audioCtx.currentTime + 0.14,
+        );
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioCtx.currentTime + 0.14,
+        );
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.14);
+      }
+
+      function toggleMusic() {
+        musicEnabled = document.getElementById("music-toggle").checked;
+        localStorage.setItem("fm_music", musicEnabled);
+        if (musicEnabled && audioCtx.state === "suspended") audioCtx.resume();
+      }
+
+      function toggleSfx() {
+        sfxEnabled = document.getElementById("sfx-toggle").checked;
+        localStorage.setItem("fm_sfx", sfxEnabled);
+      }
+
+      function openSettings() {
+        document.getElementById("settings-modal").style.display = "flex";
+      }
+
+      function closeSettings() {
+        document.getElementById("settings-modal").style.display = "none";
+      }
+
+      // Fizika dvigateli
+      const engine = Engine.create();
+      const world = engine.world;
+
+      const render = Render.create({
+        element: container,
+        engine: engine,
+        options: {
+          width: width,
+          height: height,
+          wireframes: false,
+          background: "transparent",
+        },
+      });
+
+      Render.run(render);
+      const runner = Runner.create();
+      Runner.run(runner, engine);
+
+      const wallOptions = {
+        isStatic: true,
+        render: { visible: false },
+        friction: 0.5,
+      };
+      const ground = Bodies.rectangle(
+        width / 2,
+        height + 25,
+        width,
+        50,
+        wallOptions,
+      );
+      const leftWall = Bodies.rectangle(
+        -25,
+        height / 2,
+        50,
+        height * 2,
+        wallOptions,
+      );
+      const rightWall = Bodies.rectangle(
+        width + 25,
+        height / 2,
+        50,
+        height * 2,
+        wallOptions,
+      );
+      World.add(world, [ground, leftWall, rightWall]);
+
+      function updateNextUI() {
+        document.getElementById("next-fruit").innerText =
+          FRUITS[nextFruitIndex].emoji;
+      }
+      updateNextUI();
+
+      function createFruitBody(x, y, index) {
+        const fruit = FRUITS[index];
+        return Bodies.circle(x, y, fruit.radius, {
+          restitution: 0.22,
+          friction: 0.12,
+          density: 0.002,
+          fruitIndex: index,
+          scaleAnim: 0.3, // Birlashganda kattalashish animatsiyasi
+          render: { visible: false }, // O'zimiz 3D qilib chizamiz
+        });
+      }
+
+      // 3D Realistik Meva chizish funksiyasi
+      function drawRealisticFruit(ctx, x, y, radius, angle, index) {
+        const fruit = FRUITS[index];
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        // 1. Yumshoq soya
+        ctx.shadowColor = "rgba(0, 0, 0, 0.18)";
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 4;
+
+        // 2. 3D Sferik Gradient
+        const grad = ctx.createRadialGradient(
+          -radius * 0.3,
+          -radius * 0.3,
+          radius * 0.1,
+          0,
+          0,
+          radius,
+        );
+        grad.addColorStop(0, fruit.c1);
+        grad.addColorStop(1, fruit.c2);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Soyani o'chirish (ichki elementlar uchun)
+        ctx.shadowColor = "transparent";
+
+        // 3. Tarvuz bo'lsa yashil yo'llar chizish
+        if (fruit.name === "watermelon") {
+          ctx.strokeStyle = "rgba(0, 80, 20, 0.35)";
+          ctx.lineWidth = 4;
+          for (let i = -2; i <= 2; i++) {
+            ctx.beginPath();
+            ctx.ellipse(
+              0,
+              0,
+              radius * (0.25 * Math.abs(i) + 0.15),
+              radius * 0.92,
+              0,
+              0,
+              Math.PI * 2,
+            );
+            ctx.stroke();
+          }
+        }
+
+        // 4. Yorqin shisha yaltirashi (Specular Highlight)
+        ctx.beginPath();
+        ctx.ellipse(
+          -radius * 0.32,
+          -radius * 0.32,
+          radius * 0.28,
+          radius * 0.15,
+          -Math.PI / 4,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+        ctx.fill();
+
+        // 5. Nozik tashqi hoshiya
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 1, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 6. Markaziy Emoji
+        ctx.font = `${radius * 1.15}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(fruit.emoji, 0, 2);
+
+        ctx.restore();
+      }
+
+      // Zarrachalar effekti yaratish
+      function spawnMergeParticles(x, y, color, scoreVal) {
+        for (let i = 0; i < 14; i++) {
+          const angle = ((Math.PI * 2) / 14) * i;
+          const speed = 2 + Math.random() * 4;
+          particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            radius: 3 + Math.random() * 4,
+            color: color,
+            alpha: 1,
+          });
+        }
+        floatingTexts.push({
+          x: x,
+          y: y,
+          text: `+${scoreVal}`,
+          alpha: 1,
+        });
+      }
+
+      // Canvas chizish tsikli
+      Events.on(render, "afterRender", () => {
+        const ctx = render.context;
+        const bodies = Matter.Composite.allBodies(world);
+
+        // Nishon chizig'i va tepada turgan meva
+        if (canDrop && !isGameOver) {
+          const fruit = FRUITS[currentFruitIndex];
+          ctx.beginPath();
+          ctx.setLineDash([6, 6]);
+          ctx.moveTo(currentX, 48);
+          ctx.lineTo(currentX, height);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          drawRealisticFruit(
+            ctx,
+            currentX,
+            48,
+            fruit.radius,
+            0,
+            currentFruitIndex,
+          );
+        }
+
+        // Barcha tushgan mevalarni chizish
+        bodies.forEach((body) => {
+          if (body.fruitIndex !== undefined) {
+            if (body.scaleAnim < 1) {
+              body.scaleAnim += 0.12;
+              if (body.scaleAnim > 1) body.scaleAnim = 1;
+            }
+            const r = FRUITS[body.fruitIndex].radius * body.scaleAnim;
+            drawRealisticFruit(
+              ctx,
+              body.position.x,
+              body.position.y,
+              r,
+              body.angle,
+              body.fruitIndex,
+            );
+          }
+        });
+
+        // Zarrachalar animatsiyasi
+        particles.forEach((p, idx) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 0.03;
+          if (p.alpha <= 0) {
+            particles.splice(idx, 1);
+          } else {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+
+        // Uchuvchi ochkolar (+16)
+        floatingTexts.forEach((ft, idx) => {
+          ft.y -= 1.2;
+          ft.alpha -= 0.025;
+          if (ft.alpha <= 0) {
+            floatingTexts.splice(idx, 1);
+          } else {
+            ctx.save();
+            ctx.globalAlpha = ft.alpha;
+            ctx.font = "bold 20px Fredoka, sans-serif";
+            ctx.fillStyle = "#ffffff";
+            ctx.strokeStyle = "#ff4757";
+            ctx.lineWidth = 3;
+            ctx.textAlign = "center";
+            ctx.strokeText(ft.text, ft.x, ft.y);
+            ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.restore();
+          }
+        });
+      });
+
+      // Boshqaruv
+      function updatePointerX(clientX) {
+        if (!canDrop || isGameOver) return;
+        const rect = container.getBoundingClientRect();
+        const radius = FRUITS[currentFruitIndex].radius;
+        let x = clientX - rect.left;
+        if (x < radius + 6) x = radius + 6;
+        if (x > width - radius - 6) x = width - radius - 6;
+        currentX = x;
+      }
+
+      function dropFruit() {
+        if (!canDrop || isGameOver) return;
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        if (!bgmInterval) startBackgroundMusic();
+
+        canDrop = false;
+        playPopSound(220);
+
+        const body = createFruitBody(currentX, 48, currentFruitIndex);
+        body.scaleAnim = 1;
+        body.dropTime = Date.now();
+        World.add(world, body);
+
+        setTimeout(() => {
+          if (!isGameOver) {
+            currentFruitIndex = nextFruitIndex;
+            nextFruitIndex = Math.floor(Math.random() * 4);
+            updateNextUI();
+            canDrop = true;
+          }
+        }, 500);
+      }
+
+      container.addEventListener("pointermove", (e) =>
+        updatePointerX(e.clientX),
+      );
+      container.addEventListener("pointerdown", (e) =>
+        updatePointerX(e.clientX),
+      );
+      container.addEventListener("pointerup", () => dropFruit());
+
+      // Birlashish (Merge)
+      Events.on(engine, "collisionStart", (event) => {
+        const pairs = event.pairs;
+        for (let i = 0; i < pairs.length; i++) {
+          const bodyA = pairs[i].bodyA;
+          const bodyB = pairs[i].bodyB;
+
+          if (
+            bodyA.fruitIndex !== undefined &&
+            bodyB.fruitIndex !== undefined
+          ) {
+            if (
+              bodyA.fruitIndex === bodyB.fruitIndex &&
+              !bodyA.isMerging &&
+              !bodyB.isMerging
+            ) {
+              const index = bodyA.fruitIndex;
+              if (index < FRUITS.length - 1) {
+                bodyA.isMerging = true;
+                bodyB.isMerging = true;
+
+                const newX = (bodyA.position.x + bodyB.position.x) / 2;
+                const newY = (bodyA.position.y + bodyB.position.y) / 2;
+                const nextFruit = FRUITS[index + 1];
+
+                World.remove(world, [bodyA, bodyB]);
+
+                const newBody = createFruitBody(newX, newY, index + 1);
+                World.add(world, newBody);
+
+                playPopSound(320 + index * 55);
+                spawnMergeParticles(newX, newY, nextFruit.c1, nextFruit.score);
+
+                score += nextFruit.score;
+                document.getElementById("score").innerText = score;
+                if (score > bestScore) {
+                  bestScore = score;
+                  localStorage.setItem("fruitMergeBest", bestScore);
+                  document.getElementById("best-score").innerText = bestScore;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Yutqazishni tekshirish
+      setInterval(() => {
+        if (isGameOver) return;
+        const bodies = Matter.Composite.allBodies(world);
+        for (let body of bodies) {
+          if (
+            body.fruitIndex !== undefined &&
+            body.dropTime &&
+            Date.now() - body.dropTime > 2000
+          ) {
+            if (body.position.y - FRUITS[body.fruitIndex].radius < 95) {
+              isGameOver = true;
+              document.getElementById("final-score").innerText = score;
+              document.getElementById("gameover-modal").style.display = "flex";
+              break;
+            }
+          }
+        }
+      }, 500);
+
+      function restartGame() {
+        const bodies = Matter.Composite.allBodies(world);
+        bodies.forEach((body) => {
+          if (body.fruitIndex !== undefined) World.remove(world, body);
+        });
+        particles = [];
+        floatingTexts = [];
+        score = 0;
+        document.getElementById("score").innerText = "0";
+        isGameOver = false;
+        canDrop = true;
+        document.getElementById("gameover-modal").style.display = "none";
+      }
+    </script>
+  </body>
+</html>

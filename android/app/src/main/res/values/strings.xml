@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fruit Merge</string>
+    <string name="title_activity_main">Fruit Merge</string>
+    <string name="package_name">com.yusuf.fruitmerge</string>
+    <string name="custom_url_scheme">com.yusuf.fruitmerge</string>
+</resources>
